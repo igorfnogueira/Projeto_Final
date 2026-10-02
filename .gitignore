@@ -88,6 +88,7 @@ Desktop.ini
 __pycache__/
 *.pyc
 dataset/.cache/
+host/*.dll
 
 # Documentos locais: pesquisa solta, licoes aprendidas, material de
 # apresentacao/aula -- pessoal, nunca parte do entregavel do projeto.
