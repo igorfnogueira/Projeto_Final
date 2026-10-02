@@ -16,12 +16,12 @@ ESP-SR / MultiNet foi verificado na documentação da Espressif e descartado: co
 
 O PDF pede quatro passos: coleta de sensor, treino com dataset público ou próprio, conversão e compressão, pipeline no dispositivo da leitura até a inferência. Hardware principal ESP32-S3, físico ou Wokwi. Entrega: slides ou código, vídeo, repositório público com git flow e commits de todos os integrantes.
 
-A V1 cobre os quatro passos com duas entradas e um único núcleo de inferência:
+A V1 fecha no Wokwi. A coleta no simulador é um WAV embutido, lido como PCM. A placa com INMP441 repete o mesmo núcleo depois do gatilho, e não faz parte dele.
 
 - Wokwi: clip WAV embutido no firmware (não há I2S no ESP32-S3 simulado; a [tabela oficial do Wokwi](https://docs.wokwi.com/guides/esp32) marca I2S do S3 como não implementado). LEDC/servo no S3 está simulado.
-- Placa real: INMP441 por I2S, mesmo modelo, mesmo servo.
+- Placa real, depois da V1: INMP441 por I2S, mesmo modelo, mesmo servo.
 
-Gatilho de parada da V1: um WAV conhecido produz a mesma classe no notebook e no serial do Wokwi; ABRIR vai a 90° e FECHAR a 0° no simulador; na placa, a fala faz o mesmo e silêncio/desconhecido não move o servo.
+Gatilho de parada da V1: um WAV conhecido produz o mesmo MFCC no notebook e em C, e a mesma classe no serial do Wokwi; ABRIR vai a 90° e FECHAR a 0° no simulador. Silêncio e desconhecido não movem o servo.
 
 ## Análise cética
 
@@ -29,7 +29,7 @@ Portas de uma mão:
 
 - O contrato de áudio fica congelado antes do firmware: 16 kHz, mono, janela de 1 s, parâmetros de MFCC e layout do tensor num único `mfcc_config.json`. Mudar isso invalida o modelo já convertido.
 - Alvo `esp32s3` e ESP-IDF, não Arduino. A extensão e a disciplina já fixam isso.
-- Quatro classes: `silencio`, `desconhecido`, `abrir`, `fechar`. Duas classes disparam o servo em qualquer ruído.
+- Quatro classes: `silencio`, `desconhecido`, `abrir`, `fechar`. Só `abrir` e `fechar` movem o servo, e só acima do limiar, com histerese de janelas. Fala de quem não está no grupo cai em `desconhecido`.
 
 Onde isso quebra em uso real:
 
@@ -41,7 +41,7 @@ O que um sênior perguntaria: onde está o vetor dourado (um WAV, o MFCC e os lo
 
 Limite de plataforma já verificado: I2S do ESP32-S3 no Wokwi não é simulado; LEDC PWM (servo) é. PSRAM e flash do S3 são configuráveis no `diagram.json` (`psramSize`, `flashSize`).
 
-Aposta mais arriscada: um classificador pequeno de duas palavras em português generalizar com pouco áudio. O menor teste, antes de gravar centenas de amostras e antes de ligar o microfone, é treinar com cerca de 20 clipes e rodar um WAV conhecido no Wokwi até a classe bater com o notebook.
+Aposta mais arriscada: um classificador pequeno de duas palavras em português generalizar com pouco áudio. O menor teste, antes de gravar o dataset do grupo e antes de ligar o microfone, é congelar o `mfcc_config.json` com um WAV de 1 s e rodar esse WAV no Wokwi até a classe bater com o notebook.
 
 ## Reuso
 
@@ -72,13 +72,13 @@ flowchart LR
   mfcc --> tflite --> classe --> servo
 ```
 
-Treino, no PC: clipes de 1 s, MFCC, modelo pequeno (MLP ou CNN rasa), `TFLiteConverter` com quantização INT8 e dataset representativo, mais um script que grava o vetor dourado.
+Treino, no PC: o `mfcc_config.json` congela com um único clipe de 1 s, antes da gravação do grupo. Cada integrante grava 10 clipes de ABRIR, 10 de FECHAR e 10 de silêncio, 1 s cada. A classe `desconhecido` vem de ruído e de dataset público (Speech Commands), sem voz identificável de fora. Modelo pequeno (MLP ou CNN rasa) para caber na flash e na SRAM interna. PSRAM no `diagram.json` só entra se a tensor arena medida não couber. `TFLiteConverter` com quantização INT8 e dataset representativo, mais um script que grava o vetor dourado (WAV, MFCC do notebook, MFCC em C e logits).
 
-Firmware: nasce do template `sample_project` em C, com alvo `esp32s3`. O componente `esp-tflite-micro` entra depois, no passo da inferência. Entrada PCM ou MFCC conforme o contrato, limiar de confiança e histerese de janelas, LEDC 50 Hz no servo (0° e 90°). GPIO do servo fora dos pinos de strap do S3 (evitar 0, 3, 45 e 46).
+Firmware: nasce do template `sample_project` em C, com alvo `esp32s3`. O componente `esp-tflite-micro` entra depois, no passo da inferência. A entrada é sempre PCM. O MFCC roda no dispositivo, em C, com o mesmo `mfcc_config.json` do notebook. Limiar de confiança e histerese de janelas, LEDC 50 Hz no servo (0° e 90°). GPIO do servo fora dos pinos de strap do S3 (evitar 0, 3, 45 e 46).
 
 Wokwi: `board-esp32-s3-devkitc-1`, `wokwi-servo`, `wokwi.toml` com `firmware = build/flasher_args.json` e o ELF do app. Sem peça de microfone no diagrama da V1.
 
-Placa: INMP441 só depois do vetor dourado passar no simulador. Mapeamento típico SCK/WS/SD em GPIOs livres, documentado no README, não copiado às cegas do tutorial.
+Placa: INMP441 só depois do gatilho da V1 no simulador. Mapeamento típico SCK/WS/SD em GPIOs livres, documentado no README, não copiado às cegas do tutorial. Fala de fora do grupo não é classe a reconhecer: cai em `desconhecido` e o servo fica parado.
 
 ## O que escolher no New Project Wizard
 
@@ -117,12 +117,57 @@ Descartados por excesso no dia 1: `CHANGELOG`, `ROADMAP`, `SECURITY.md`, modelo 
 
 Ficam no estacionamento: mais palavras, wake word, app ou Wi-Fi, várias pessoas fora do grupo, lógica de porta além de dois ângulos, e microfone dentro do Wokwi enquanto o I2S do S3 não existir no simulador.
 
-## Ordem de execução
+## Plano de execução
 
-1. Scaffold acadêmico: README, ADR da stack, NIVEL, ESTACIONAMENTO, MODEL_CARD, DATA_CARD, EXPERIMENTOS, ambiente travado.
-2. Criar pelo wizard o template `sample_project` (C) com alvo `esp32s3`, `wokwi.toml`, `diagram.json` (DevKitC-1 + servo) e PWM 0°/90° sem microfone. Exemplos do IDF e o `micro_speech` ficam só como referência.
-3. Notebook com `mfcc_config.json` congelado, treino INT8 e script do vetor dourado.
-4. Inferência do WAV embutido no Wokwi até a classe bater com o notebook e o servo mover.
-5. Caminho INMP441 na placa real, reusando o mesmo modelo, com limiar para não acionar em silêncio/desconhecido.
+O `sample_project` em C já existe (`CMakeLists.txt`, `main/main.c` vazio). O wizard do ESP-IDF não se repete. O `wokwi.toml` ainda aponta para `.pio/build/`; isso se corrige no passo 2.
 
-A gravação dos áudios continua com o grupo. O código do firmware não faz parte deste arquivo.
+| Passo | Quem | Pronto quando |
+|---|---|---|
+| 1. Scaffold acadêmico | Agente | README, ADR, NIVEL, ESTACIONAMENTO, MODEL_CARD, DATA_CARD, EXPERIMENTOS, ambiente travado |
+| 2. Servo no Wokwi | Agente escreve; você simula | `diagram.json` com DevKitC-1 e servo, sem microfone. PWM 0° e 90°. Serial sobe |
+| 3. Congelar o MFCC | Você grava 1 clipe; agente trava o config | `mfcc_config.json` gravado e não muda mais |
+| 4. Dataset e treino | Você grava o grupo; agente treina | INT8 + vetor dourado (WAV, MFCC do notebook, logits) |
+| 5. Inferência no Wokwi | Agente escreve; você confere o simulador | MFCC em C igual ao do notebook, mesma classe no serial, servo a 90° e a 0°. Fecha a V1 |
+| 6. Placa | Você liga o hardware; agente escreve o I2S | Mesmo modelo. Silêncio e desconhecido não movem o servo |
+
+Fora deste plano: mais palavras, wake word, Wi-Fi, voz de fora como classe a reconhecer, microfone dentro do Wokwi.
+
+## Passos que só você faz
+
+### A. Um clipe para congelar o config (antes do passo 3)
+
+Um arquivo basta. Qualquer integrante, sala quieta, a palavra "abrir".
+
+1. Instale o Audacity.
+2. No canto inferior esquerdo, ponha a taxa do projeto em **16000 Hz**.
+3. Grave uma faixa. Se nascer em estéreo, use **Faixas → Mix → Mix Stereo down to Mono**.
+4. Selecione exatamente **1,0 s** de fala (a palavra inteira dentro da seleção, sem corte no meio).
+5. **Arquivo → Exportar → Exportar como WAV**. Codificação **Signed 16-bit PCM**.
+6. Salve como `dataset/congelar/amostra.wav` na raiz deste repositório.
+7. Avise aqui que o arquivo está no lugar. O `mfcc_config.json` só congela depois disso.
+
+### B. Dataset do grupo (passo 4, depois do config congelado)
+
+Cada integrante, os mesmos três tipos, 1 s cada, mesma regra do Audacity (16 kHz, mono, WAV 16-bit):
+
+1. 10 clipes dizendo "abrir". Nome: `dataset/<nome>/abrir_01.wav` … `abrir_10.wav`.
+2. 10 clipes dizendo "fechar". Nome: `fechar_01.wav` … `fechar_10.wav`.
+3. 10 clipes de silêncio na mesma sala, sem falar. Nome: `silencio_01.wav` … `silencio_10.wav`.
+4. Não grave outras pessoas. Fala de fora, na arguição, é `desconhecido` e não move o servo.
+5. Avise quando a pasta `dataset/` estiver completa.
+
+### C. Conferir o simulador (passos 2 e 5)
+
+1. Abra esta pasta no Cursor com a extensão Wokwi.
+2. Abra o `diagram.json` e inicie a simulação.
+3. No passo 2, o serial sobe e o servo vai a 0° e a 90°, sem microfone no diagrama.
+4. No passo 5, o serial imprime a mesma classe do notebook para o WAV conhecido. ABRIR vai a 90°, FECHAR a 0°. Silêncio não move.
+5. Se a classe divergir, pare e traga o log do serial. Não grave mais áudio para "consertar" isso.
+
+### D. Placa real (passo 6, só depois da V1 no Wokwi)
+
+1. Não ligue o INMP441 antes do passo 5 passar.
+2. Servo: sinal num GPIO livre, fora de 0, 3, 45 e 46. Alimentação do servo separada da lógica 3,3 V do S3.
+3. INMP441: VDD em 3,3 V, GND, L/R em GND (canal esquerdo), SCK, WS e SD em GPIOs livres, os mesmos três fora da lista de strap.
+4. Grave o firmware que o passo 6 produzir e fale "abrir" e "fechar". Silêncio e outra frase deixam o servo parado.
+5. Anote os GPIOs usados e confirme aqui. O README registra esse mapa; não copie pinos de tutorial.

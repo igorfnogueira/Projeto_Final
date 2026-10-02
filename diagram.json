@@ -1,8 +1,17 @@
 {
-    "version": 1,
-    "author": "Igor Fonseca",
-    "editor": "wokwi",
-    "parts": [ { "type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0, "attrs": {} } ],
-    "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
-    "dependencies": {}
-  }
+  "version": 1,
+  "author": "Igor Fonseca",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo", "top": -80, "left": 200, "attrs": {} }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["esp:4", "servo:PWM", "green", []],
+    ["esp:5V", "servo:V+", "red", []],
+    ["esp:GND.1", "servo:GND", "black", []]
+  ],
+  "dependencies": {}
+}
