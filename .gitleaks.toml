@@ -1,0 +1,22 @@
+# Configuracao do gitleaks (pre-commit em .githooks/pre-commit e job
+# "segredo" do CI). Usa as regras padrao do gitleaks e so acrescenta
+# allowlist.
+#
+# Regra da allowlist: cada entrada tem um comentario com o MOTIVO. Um
+# falso positivo vira entrada aqui, revisavel no diff -- nunca desligar
+# o hook nem usar --no-verify como rotina.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Arquivos de exemplo versionados: por regra, so valores falsos/de dev (ver .env.example)"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.mcp\.json\.example$''',
+]
+
+# Exemplo de entrada (copie, ajuste e explique o motivo):
+# [[allowlists]]
+# description = "Chave publica do reCAPTCHA de teste, documentada como publica pelo Google"
+# regexes = ['''6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI''']

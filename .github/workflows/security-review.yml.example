@@ -1,0 +1,41 @@
+# Extensao ".example" deliberada -- renomear pra "security-review.yml"
+# so quando for de fato ativar num projeto com ANTHROPIC_API_KEY
+# configurada como secret do repo. Sem isso, o workflow fica quebrado
+# rodando em todo PR sem necessidade.
+#
+# Action oficial da Anthropic (anthropics/claude-code-security-review):
+# roda o Claude pra analisar o diff do PR procurando padrao OWASP amplo
+# (SQLi, XSS, falha de auth/authz, exposicao de dado, dependencia
+# vulneravel). Serve como SEGUNDA opiniao, com criterio mais generico
+# que o Revisor-Cetico (.githooks/pre-commit), que e afinado pro
+# contexto especifico deste template (segredo, .env, comando de shell).
+#
+# Nota de seguranca (da propria documentacao da Action): nao e
+# hardened contra prompt injection vindo de PR externo -- usar so em
+# PRs confiaveis, ou ativar "Require approval for all external
+# contributors" antes de aceitar PR de fork.
+#
+# Antes de ativar: conferir a sintaxe atual em
+# https://github.com/anthropics/claude-code-security-review (inputs
+# podem mudar entre versoes da Action).
+#
+# name: Security Review
+#
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+#
+# jobs:
+#   security-review:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       pull-requests: write
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 2
+#
+#       - uses: anthropics/claude-code-security-review@main
+#         with:
+#           claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

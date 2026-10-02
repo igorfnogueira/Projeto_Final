@@ -1,0 +1,8 @@
+# Alterações aqui serão sobrescritas pelo Copier em `copier update`.
+_commit: 57a99f7
+_src_path: https://github.com/igorfnogueira/template_governanca.git
+nome_projeto: Projeto_Final
+stack: ESP-IDF (C, esp32s3) + notebook próprio (MFCC, TFLite INT8) + esp-tflite-micro
+usa_infisical: false
+usa_supabase: false
+

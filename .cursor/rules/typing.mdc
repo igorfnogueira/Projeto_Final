@@ -1,0 +1,11 @@
+---
+description: Tipagem e padrão de código
+globs: ["**/*.py", "**/*.ts"]
+alwaysApply: false
+---
+
+# Diretrizes de Tipagem
+
+- [preencher: convenções de tipagem/docstring específicas do projeto]
+- Tipagem estrita recomendada para assinaturas de funções e métodos públicos.
+- Evite anotações genéricas sem justificativa.

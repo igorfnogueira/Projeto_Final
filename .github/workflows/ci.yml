@@ -1,0 +1,58 @@
+name: CI
+
+# Rede de seguranca que roda sozinha no servidor, sem depender de
+# ninguem lembrar de rodar hook local antes de subir. Nao substitui
+# .githooks/pre-commit (Revisor-Cetico) -- complementa: o hook local
+# so vale se estiver ativo na maquina de quem commitou.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-e-teste:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # [preencher: setup do runtime real do projeto -- ex.:
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '22'
+      # ou actions/setup-python@v5, etc.]
+
+      # [preencher: comando de instalacao de dependencia do projeto --
+      # ex.: npm ci / pip install -r requirements.txt]
+
+      - name: Lint
+        run: 'echo "[preencher: comando de lint deste projeto]"'
+
+      - name: Testes
+        run: 'echo "[preencher: comando de teste deste projeto]"'
+
+  # Mesmo scanner do .githooks/pre-commit, para cobrir quem commitou sem
+  # o hook ativo. Binario (nao a Action oficial, que exige licenca em
+  # conta de organizacao), versao fixa e checksum conferido. Varre o
+  # historico inteiro com --redact: a saida nunca mostra o valor.
+  segredo:
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          arq="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "$base/$arq"
+          curl -sSfLO "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " $arq\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "$arq" gitleaks
+
+      - name: Varrer segredo
+        run: ./gitleaks git --redact --no-banner -v -c .gitleaks.toml

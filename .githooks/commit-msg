@@ -1,0 +1,71 @@
+#!/bin/sh
+# Exige o rodape Task-Level/Model em toda mensagem de commit (regra do
+# CLAUDE.md global: "Commit Estruturado com Rodape"). git commit-msg
+# recebe o caminho do arquivo de mensagem como $1 -- e o unico hook
+# que le a mensagem em si, o pre-commit (que roda antes, so olha o
+# diff) nao tem acesso a ela.
+
+MSG_FILE="$1"
+
+if ! grep -qE '^Task-Level:[[:space:]]*N[0-3]' "$MSG_FILE"; then
+    echo "=================================================="
+    echo " COMMIT BLOQUEADO: falta 'Task-Level: N<0-3>' no rodape da mensagem."
+    echo " Exemplo:"
+    echo "   Task-Level: N1"
+    echo "   Model: Claude Sonnet 5"
+    echo "=================================================="
+    exit 1
+fi
+
+if ! grep -qE '^Model:[[:space:]]*\S' "$MSG_FILE"; then
+    echo "=================================================="
+    echo " COMMIT BLOQUEADO: falta 'Model: <nome>' no rodape da mensagem."
+    echo "=================================================="
+    exit 1
+fi
+
+# Isolamento de N3 (CLAUDE.md global, Passo 6 item 5): mudanca N3 exige
+# branch curta n3/<nome-da-tarefa>. N0-N2 rodam na branch atual de
+# trabalho, sem restricao. So o commit-msg tem a mensagem completa pra
+# ler o Task-Level -- o pre-commit so ve o diff staged.
+if grep -qE '^Task-Level:[[:space:]]*N3' "$MSG_FILE"; then
+    BRANCH_ATUAL=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    case "$BRANCH_ATUAL" in
+        n3/*) ;;
+        *)
+            echo "=================================================="
+            echo " COMMIT BLOQUEADO: Task-Level N3 exige branch curta n3/<nome>."
+            echo " Branch atual: $BRANCH_ATUAL"
+            echo " Corrija com: git checkout -b n3/<nome-da-tarefa>"
+            echo "=================================================="
+            exit 1
+            ;;
+    esac
+fi
+
+# Regra de Ouro (CLAUDE.md global, "N2 e N3"): mudanca multi-arquivo
+# exige plano aprovado antes da escrita, ou seja, e territorio N2+.
+# So conta arquivo de CODIGO: pareamento codigo+doc (CHANGELOG.md, ADR,
+# etc.) e o padrao normal de N0/N1 exigido pela propria skill
+# governanca-docs, nao "mudanca multi-arquivo" no sentido da regra --
+# confirmado contra os commits reais deste repositorio antes de ligar
+# a checagem (nenhum N0/N1 historico tem 2+ arquivos nao-.md).
+if grep -qE '^Task-Level:[[:space:]]*N[01]' "$MSG_FILE"; then
+    NAO_MD=$(git diff --cached --name-only | grep -v '\.md$' | grep -v '^$')
+    N_NAO_MD=$(printf '%s\n' "$NAO_MD" | grep -c '.')
+    if [ -z "$NAO_MD" ]; then
+        N_NAO_MD=0
+    fi
+    if [ "$N_NAO_MD" -gt 1 ]; then
+        echo "=================================================="
+        echo " COMMIT BLOQUEADO: Regra de Ouro -- mudanca multi-arquivo exige plano (N2+)."
+        echo " Arquivos de codigo staged (nao-.md): $N_NAO_MD"
+        echo "$NAO_MD"
+        echo " Reclassifique como N2 com plano aprovado, ou divida em"
+        echo " commits separados de 1 arquivo de codigo cada."
+        echo "=================================================="
+        exit 1
+    fi
+fi
+
+exit 0

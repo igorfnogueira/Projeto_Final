@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "workspaceOpen": [
+      {
+        "command": "powershell.exe -ExecutionPolicy Bypass -File ./setup.ps1"
+      }
+    ]
+  }
+}
