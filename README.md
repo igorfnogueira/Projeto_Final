@@ -1,6 +1,6 @@
 # Projeto_Final
 
-Comandos ABRIR/FECHAR em português no ESP32-S3. Treino próprio no notebook (MFCC, TFLite INT8) e inferência com `esp-tflite-micro`. O Wokwi, neste passo, sobe o serial e move o servo. O primeiro INT8 está em `treino/saida/modelo.tflite` e ainda não roda no firmware.
+Comandos ABRIR/FECHAR em português no ESP32-S3. Treino próprio no notebook (MFCC, TFLite INT8) e inferência com `esp-tflite-micro`. O Wokwi, neste passo, sobe o serial e move o servo. O primeiro INT8 está em `treino/saida/modelo.tflite` e o firmware roda esse arquivo nas quatro janelas conhecidas.
 
 **Alvo:** `esp32s3`. **Nível:** A (acadêmico), ver `docs/NIVEL.md`.
 
@@ -22,7 +22,18 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
-Abra o `diagram.json` no Wokwi e inicie a simulação. O serial imprime `servo 0` e depois `servo 90`. Cada ângulo permanece pelo menos um segundo e o servo termina em 90°. Não há microfone no diagrama. O sinal do servo desta demo é o GPIO 4 (LEDC 50 Hz, 1000 µs em 0° e 1500 µs em 90°).
+Abra o `diagram.json` no Wokwi e inicie a simulação de novo depois do build, para carregar o firmware novo. O servo começa em 0°, sem linha de servo. O serial imprime, nesta ordem:
+
+```text
+classe silencio
+classe desconhecido
+classe abrir
+servo 90
+classe fechar
+servo 0
+```
+
+Silêncio e desconhecido não movem o servo. Abrir vai a 90° e fechar volta a 0°. Cada janela permanece 1,5 s e o servo termina em 0°. Não há microfone no diagrama. O sinal do servo é o GPIO 4 (LEDC 50 Hz, 1000 µs em 0° e 1500 µs em 90°).
 
 O treino é `python -m treino.train`, com a seed 42. O notebook `treino/treino.ipynb` chama o mesmo comando. O primeiro conjunto é só `dataset/igor/` mais `dataset/desconhecido/`. Os clipes 01 a 08 treinam; 09 e 10 ficam de fora.
 

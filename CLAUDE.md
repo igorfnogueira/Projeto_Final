@@ -3,7 +3,7 @@
 **Nível:** A (acadêmico). Ver `docs/NIVEL.md`.
 **Stack:** ESP-IDF (C, esp32s3), notebook próprio (MFCC, TFLite INT8), `esp-tflite-micro`.
 **Rodar:** `idf.py build`, depois simular o `diagram.json` no Wokwi.
-**Testar:** no serial do Wokwi, a linha `servo 0` e depois `servo 90`.
+**Testar:** no serial do Wokwi, as quatro classes e o servo só em abrir (`servo 90`) e fechar (`servo 0`).
 **Lint:** não há comando de lint neste passo.
 
 ## Estrutura

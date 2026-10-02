@@ -1,17 +1,18 @@
 #include <stdio.h>
 
 #include "driver/ledc.h"
+#include "embutidos.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "inferencia.h"
+#include "serial.h"
 #include "soc/gpio_num.h"
 
 #define SERVO_GPIO GPIO_NUM_4
 #define SERVO_FREQ_HZ 50
 #define SERVO_PERIOD_US 20000
 #define SERVO_RESOLUTION LEDC_TIMER_14_BIT
-#define PULSE_0_US 1000
-#define PULSE_90_US 1500
 #define ANGLE_HOLD_MS 1500
 
 static uint32_t duty_for_pulse_us(uint32_t pulse_us)
@@ -51,17 +52,38 @@ static void servo_init(void)
 
 void app_main(void)
 {
+    int i;
+
     servo_init();
+    servo_set_pulse_us(PULSO_SERVO_0_US);
 
-    servo_set_pulse_us(PULSE_0_US);
-    printf("servo 0\n");
-    fflush(stdout);
-    vTaskDelay(pdMS_TO_TICKS(ANGLE_HOLD_MS));
+    if (inferencia_iniciar() != 0) {
+        printf("inferencia falhou\n");
+        fflush(stdout);
+        while (true) {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+    }
 
-    servo_set_pulse_us(PULSE_90_US);
-    printf("servo 90\n");
-    fflush(stdout);
-    vTaskDelay(pdMS_TO_TICKS(ANGLE_HOLD_MS));
+    for (i = 0; i < JANELA_N; i++) {
+        char texto[64];
+        int classe = classificar_pcm(janela_pcm[i]);
+        int pulso;
+
+        if (classe < 0) {
+            printf("inferencia falhou\n");
+            fflush(stdout);
+            servo_set_pulse_us(PULSO_SERVO_0_US);
+            break;
+        }
+        pulso = linhas_da_janela(classe, texto, sizeof(texto));
+        printf("%s", texto);
+        fflush(stdout);
+        if (pulso != 0) {
+            servo_set_pulse_us((uint32_t)pulso);
+        }
+        vTaskDelay(pdMS_TO_TICKS(ANGLE_HOLD_MS));
+    }
 
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(1000));

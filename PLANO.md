@@ -119,14 +119,14 @@ Ficam no estacionamento: mais palavras, wake word, app ou Wi-Fi, várias pessoas
 
 ## Plano de execução
 
-O `sample_project` em C já existe. O `main` sobe o serial e leva o servo a 0° e 90°. O `wokwi.toml` aponta para o build do ESP-IDF. A conferência visual no simulador continua com o grupo.
+O `sample_project` em C já existe. O `main` classifica as quatro janelas conhecidas e move o servo só em abrir e fechar. O `wokwi.toml` aponta para o build do ESP-IDF. A conferência visual no simulador continua com o grupo.
 
 | Passo | Quem | Pronto quando |
 |---|---|---|
 | 1. Scaffold acadêmico | Agente | README, ADR, NIVEL, ESTACIONAMENTO, MODEL_CARD, DATA_CARD, EXPERIMENTOS, ambiente travado |
 | 2. Servo no Wokwi | Agente escreve; você simula | `diagram.json` com DevKitC-1 e servo, sem microfone. PWM 0° e 90°. Serial sobe |
 | 3. Congelar o MFCC | Você grava 1 clipe; agente trava o config | `mfcc_config.json` gravado e não muda mais |
-| 4. Dataset e treino | Você grava o grupo; agente treina | INT8 + vetor dourado (WAV, MFCC do notebook, MFCC em C e logits). O primeiro INT8 usou só `dataset/igor/` e `dataset/desconhecido/`; o MFCC em C ainda não entrou |
+| 4. Dataset e treino | Você grava o grupo; agente treina | INT8 + vetor dourado (WAV, MFCC do notebook, MFCC em C e logits). O primeiro INT8 usou só `dataset/igor/` e `dataset/desconhecido/`. O MFCC em C no host coincide na classe com o notebook |
 | 5. Inferência no Wokwi | Agente escreve; você confere o simulador | MFCC em C igual ao do notebook, mesma classe no serial, servo a 90° e a 0°. Fecha a V1 |
 | 6. Placa | Você liga o hardware; agente escreve o I2S | Mesmo modelo. Silêncio e desconhecido não movem o servo |
 

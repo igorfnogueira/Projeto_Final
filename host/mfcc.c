@@ -139,25 +139,26 @@ static void preparar(void)
 
 void mfcc_janela(const int16_t *pcm, double *saida)
 {
-    double y[MFCC_AMOSTRAS];
+    /* Fora da pilha: no ESP32-S3 a tarefa principal não cabe 8 KB de FFT. */
+    static double re[FFT_N];
+    static double im[FFT_N];
     int i, j, k;
 
     preparar();
-    y[0] = (double)pcm[0];
-    for (i = 1; i < MFCC_AMOSTRAS; i++) {
-        y[i] = (double)pcm[i] - PRE * (double)pcm[i - 1];
-    }
 
     for (i = 0; i < MFCC_QUADROS; i++) {
-        double re[FFT_N];
-        double im[FFT_N];
         double logmel[MELS];
         int inicio = i * PASSO;
 
         memset(re, 0, sizeof(re));
         memset(im, 0, sizeof(im));
         for (j = 0; j < QUADRO; j++) {
-            re[j] = y[inicio + j] * hann[j];
+            int n = inicio + j;
+            double amostra = (double)pcm[n];
+            if (n > 0) {
+                amostra -= PRE * (double)pcm[n - 1];
+            }
+            re[j] = amostra * hann[j];
         }
         fft(re, im, FFT_N);
 
