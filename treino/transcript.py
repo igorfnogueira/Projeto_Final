@@ -50,6 +50,7 @@ def _contrato(config):
         "lifter": mfcc["lifter"] == 22,
         "janela": mfcc["window_fn"] == "hann",
         "mel": mfcc["mel_scale"] == "htk",
+        "dct": mfcc["dct_type"] == 2,
         "energia": mfcc["include_energy"] is False,
         "classes": config["labels"] == list(LABELS),
     }
@@ -104,14 +105,21 @@ def main():
         maior = max(maior, float(np.max(np.abs(c - ref))))
         tensores.append(c.astype(np.float32))
 
-    pred, _, _, _ = _predict_int8(modelo, np.stack(tensores))
+    pred_c, _, _, _ = _predict_int8(modelo, np.stack(tensores))
+    referencia = np.stack(
+        [ouro["mfcc"][por_caminho[JANELAS[nome].relative_to(ROOT).as_posix()]] for nome in ORDEM]
+    ).astype(np.float32)
+    pred_notebook, _, _, _ = _predict_int8(modelo, referencia)
     falhou = False
-    for nome, classe in zip(ORDEM, pred):
-        rotulo = LABELS[int(classe)]
+    for nome, classe_c, classe_nb in zip(ORDEM, pred_c, pred_notebook):
+        rotulo = LABELS[int(classe_c)]
         print(f"classe {rotulo}")
-        if rotulo != nome:
+        if classe_c != classe_nb:
             falhou = True
-            print(f"esperava {nome}, saiu {rotulo}", file=sys.stderr)
+            print(
+                f"{nome}: o MFCC em C mudou a classe para {rotulo}, o notebook deu {LABELS[int(classe_nb)]}",
+                file=sys.stderr,
+            )
     print(f"diferenca {maior:.8e}")
     if falhou:
         raise SystemExit(1)
