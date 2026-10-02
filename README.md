@@ -1,6 +1,6 @@
 # Projeto_Final
 
-Comandos ABRIR/FECHAR em português no ESP32-S3. Treino próprio no notebook (MFCC, TFLite INT8) e inferência com `esp-tflite-micro`. Este passo só sobe o serial e move o servo no Wokwi. Ainda não há modelo.
+Comandos ABRIR/FECHAR em português no ESP32-S3. Treino próprio no notebook (MFCC, TFLite INT8) e inferência com `esp-tflite-micro`. O Wokwi, neste passo, sobe o serial e move o servo. O primeiro INT8 está em `treino/saida/modelo.tflite` e ainda não roda no firmware.
 
 **Alvo:** `esp32s3`. **Nível:** A (acadêmico), ver `docs/NIVEL.md`.
 
@@ -10,7 +10,7 @@ ESP-IDF em C, notebook próprio (MFCC e TFLite INT8) e o runtime `esp-tflite-mic
 
 ## O que já está fechado
 
-- A entrada no dispositivo é PCM. O MFCC roda em C, com o mesmo config do notebook. Os números (coeficientes, FFT, hop) ainda não existem. <!-- PENDENTE: gravar dataset/congelar/amostra.wav de 1 s para congelar o config -->
+- A entrada no dispositivo é PCM. O MFCC roda em C com o `mfcc_config.json` já congelado: 16 kHz, janela de 1 s, quadro de 20 ms, passo de 10 ms, FFT 512, 13 coeficientes, tensor 99×13.
 - Voz de quem não está no grupo cai em `desconhecido` e não move o servo. Não se guarda essa voz com identidade.
 - O config congela com um WAV de 1 s. Depois, cada integrante grava 10 ABRIR, 10 FECHAR e 10 silêncio.
 - A V1 fecha no Wokwi: o mesmo MFCC no notebook e em C, a mesma classe no serial, ABRIR a 90° e FECHAR a 0°. Silêncio e desconhecido ficam parados. O INMP441 vem depois disso.
@@ -24,20 +24,20 @@ idf.py build
 
 Abra o `diagram.json` no Wokwi e inicie a simulação. O serial imprime `servo 0` e depois `servo 90`. Cada ângulo permanece pelo menos um segundo e o servo termina em 90°. Não há microfone no diagrama. O sinal do servo desta demo é o GPIO 4 (LEDC 50 Hz, 1000 µs em 0° e 1500 µs em 90°).
 
-O notebook ainda não existe. A seed fica pendente até lá. <!-- PENDENTE: seed do treino, quando o notebook existir -->
+O treino é `python -m treino.train`, com a seed 42. O notebook `treino/treino.ipynb` chama o mesmo comando. O primeiro conjunto é só `dataset/igor/` mais `dataset/desconhecido/`. Os clipes 01 a 08 treinam; 09 e 10 ficam de fora.
 
-Dependências Python: `requirements.txt` não lista pacotes neste passo. As versões entram com o notebook, pinadas nesse arquivo.
+Dependências Python: `requirements.txt`, com o ambiente travado em `requirements.lock`.
 
 ## O que só o grupo grava
 
 ### Um clipe para congelar o config
 
-Sala quieta, a palavra "abrir".
+Sala quieta, a frase "abrir porta". A frase inteira tem de caber em 1 s.
 
 1. Instale o Audacity.
 2. No canto inferior esquerdo, ponha a taxa do projeto em 16000 Hz.
 3. Grave uma faixa. Se nascer em estéreo, use Faixas → Mix → Mix Stereo down to Mono.
-4. Selecione exatamente 1,0 s de fala, com a palavra inteira dentro da seleção.
+4. Selecione exatamente 1,0 s de fala, com a frase inteira dentro da seleção.
 5. Arquivo → Exportar → Exportar como WAV, codificação Signed 16-bit PCM.
 6. Salve como `dataset/congelar/amostra.wav`.
 
@@ -45,8 +45,8 @@ Sala quieta, a palavra "abrir".
 
 Cada integrante, 16 kHz, mono, WAV 16-bit, 1 s:
 
-1. 10 clipes de "abrir": `dataset/<nome>/abrir_01.wav` … `abrir_10.wav`.
-2. 10 clipes de "fechar": `fechar_01.wav` … `fechar_10.wav`.
+1. 10 clipes de "abrir porta": `dataset/<nome>/abrir_01.wav` … `abrir_10.wav`.
+2. 10 clipes de "fechar porta": `fechar_01.wav` … `fechar_10.wav`.
 3. 10 clipes de silêncio na mesma sala: `silencio_01.wav` … `silencio_10.wav`.
 4. Não grave outras pessoas.
 

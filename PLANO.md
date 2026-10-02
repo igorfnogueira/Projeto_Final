@@ -126,7 +126,7 @@ O `sample_project` em C já existe. O `main` sobe o serial e leva o servo a 0° 
 | 1. Scaffold acadêmico | Agente | README, ADR, NIVEL, ESTACIONAMENTO, MODEL_CARD, DATA_CARD, EXPERIMENTOS, ambiente travado |
 | 2. Servo no Wokwi | Agente escreve; você simula | `diagram.json` com DevKitC-1 e servo, sem microfone. PWM 0° e 90°. Serial sobe |
 | 3. Congelar o MFCC | Você grava 1 clipe; agente trava o config | `mfcc_config.json` gravado e não muda mais |
-| 4. Dataset e treino | Você grava o grupo; agente treina | INT8 + vetor dourado (WAV, MFCC do notebook, MFCC em C e logits) |
+| 4. Dataset e treino | Você grava o grupo; agente treina | INT8 + vetor dourado (WAV, MFCC do notebook, MFCC em C e logits). O primeiro INT8 usou só `dataset/igor/` e `dataset/desconhecido/`; o MFCC em C ainda não entrou |
 | 5. Inferência no Wokwi | Agente escreve; você confere o simulador | MFCC em C igual ao do notebook, mesma classe no serial, servo a 90° e a 0°. Fecha a V1 |
 | 6. Placa | Você liga o hardware; agente escreve o I2S | Mesmo modelo. Silêncio e desconhecido não movem o servo |
 
@@ -136,12 +136,12 @@ Fora deste plano: mais palavras, wake word, Wi-Fi, voz de fora como classe a rec
 
 ### A. Um clipe para congelar o config (antes do passo 3)
 
-Um arquivo basta. Qualquer integrante, sala quieta, a palavra "abrir".
+Um arquivo basta. Qualquer integrante, sala quieta, a frase "abrir porta". A frase inteira tem de caber em 1 s.
 
 1. Instale o Audacity.
 2. No canto inferior esquerdo, ponha a taxa do projeto em **16000 Hz**.
 3. Grave uma faixa. Se nascer em estéreo, use **Faixas → Mix → Mix Stereo down to Mono**.
-4. Selecione exatamente **1,0 s** de fala (a palavra inteira dentro da seleção, sem corte no meio).
+4. Selecione exatamente **1,0 s** de fala (a frase inteira dentro da seleção, sem corte no meio).
 5. **Arquivo → Exportar → Exportar como WAV**. Codificação **Signed 16-bit PCM**.
 6. Salve como `dataset/congelar/amostra.wav` na raiz deste repositório.
 7. Avise aqui que o arquivo está no lugar. O `mfcc_config.json` só congela depois disso.
@@ -150,8 +150,8 @@ Um arquivo basta. Qualquer integrante, sala quieta, a palavra "abrir".
 
 Cada integrante, os mesmos três tipos, 1 s cada, mesma regra do Audacity (16 kHz, mono, WAV 16-bit):
 
-1. 10 clipes dizendo "abrir". Nome: `dataset/<nome>/abrir_01.wav` … `abrir_10.wav`.
-2. 10 clipes dizendo "fechar". Nome: `fechar_01.wav` … `fechar_10.wav`.
+1. 10 clipes dizendo "abrir porta". Nome: `dataset/<nome>/abrir_01.wav` … `abrir_10.wav`.
+2. 10 clipes dizendo "fechar porta". Nome: `fechar_01.wav` … `fechar_10.wav`.
 3. 10 clipes de silêncio na mesma sala, sem falar. Nome: `silencio_01.wav` … `silencio_10.wav`.
 4. Não grave outras pessoas. Fala de fora, na arguição, é `desconhecido` e não move o servo.
 5. Avise quando a pasta `dataset/` estiver completa.
@@ -169,5 +169,5 @@ Cada integrante, os mesmos três tipos, 1 s cada, mesma regra do Audacity (16 kH
 1. Não ligue o INMP441 antes do passo 5 passar.
 2. Servo: sinal num GPIO livre, fora de 0, 3, 45 e 46. Alimentação do servo separada da lógica 3,3 V do S3.
 3. INMP441: VDD em 3,3 V, GND, L/R em GND (canal esquerdo), SCK, WS e SD em GPIOs livres, os mesmos três fora da lista de strap.
-4. Grave o firmware que o passo 6 produzir e fale "abrir" e "fechar". Silêncio e outra frase deixam o servo parado.
+4. Grave o firmware que o passo 6 produzir e fale "abrir porta" e "fechar porta". Silêncio e outra frase deixam o servo parado.
 5. Anote os GPIOs usados e confirme aqui. O README registra esse mapa; não copie pinos de tutorial.

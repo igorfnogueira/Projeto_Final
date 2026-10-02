@@ -1,0 +1,88 @@
+{
+  "seed": 42,
+  "labels": [
+    "silencio",
+    "desconhecido",
+    "abrir",
+    "fechar"
+  ],
+  "n_train": 32,
+  "n_test": 8,
+  "modelo": "centroide",
+  "epochs": 0,
+  "acc_treino_float": 1.0,
+  "acc_teste_float": 1.0,
+  "acc_teste_int8": 1.0,
+  "input_quantization": {
+    "scale": 1.0896207094192505,
+    "zero_point": 6
+  },
+  "output_quantization": {
+    "scale": 13.995798110961914,
+    "zero_point": 127
+  },
+  "golden": [
+    {
+      "path": "dataset/igor/abrir_09.wav",
+      "label": "abrir",
+      "pred": "abrir"
+    },
+    {
+      "path": "dataset/igor/fechar_09.wav",
+      "label": "fechar",
+      "pred": "fechar"
+    },
+    {
+      "path": "dataset/igor/silencio_09.wav",
+      "label": "silencio",
+      "pred": "silencio"
+    },
+    {
+      "path": "dataset/desconhecido/desconhecido_09.wav",
+      "label": "desconhecido",
+      "pred": "desconhecido"
+    }
+  ],
+  "teste": [
+    {
+      "path": "dataset/igor/abrir_09.wav",
+      "label": "abrir",
+      "pred": "abrir"
+    },
+    {
+      "path": "dataset/igor/abrir_10.wav",
+      "label": "abrir",
+      "pred": "abrir"
+    },
+    {
+      "path": "dataset/igor/fechar_09.wav",
+      "label": "fechar",
+      "pred": "fechar"
+    },
+    {
+      "path": "dataset/igor/fechar_10.wav",
+      "label": "fechar",
+      "pred": "fechar"
+    },
+    {
+      "path": "dataset/igor/silencio_09.wav",
+      "label": "silencio",
+      "pred": "silencio"
+    },
+    {
+      "path": "dataset/igor/silencio_10.wav",
+      "label": "silencio",
+      "pred": "silencio"
+    },
+    {
+      "path": "dataset/desconhecido/desconhecido_09.wav",
+      "label": "desconhecido",
+      "pred": "desconhecido"
+    },
+    {
+      "path": "dataset/desconhecido/desconhecido_10.wav",
+      "label": "desconhecido",
+      "pred": "desconhecido"
+    }
+  ]
+}

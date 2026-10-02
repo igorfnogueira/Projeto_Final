@@ -1,1 +1,2 @@
-# Sem pacotes neste passo. As versões entram com o notebook e ficam pinadas aqui.
+tensorflow==2.20.0
+numpy==2.2.6

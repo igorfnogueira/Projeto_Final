@@ -1,1 +1,4 @@
 CONFIG_IDF_TARGET="esp32s3"
+# O monitor do Wokwi escuta o UART0. O console USB secundario trava o printf na simulacao.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y

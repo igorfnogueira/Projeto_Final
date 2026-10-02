@@ -13,5 +13,8 @@
     ["esp:5V", "servo:V+", "red", []],
     ["esp:GND.1", "servo:GND", "black", []]
   ],
-  "dependencies": {}
+  "dependencies": {},
+  "serialMonitor": {
+    "display": "always"
+  }
 }

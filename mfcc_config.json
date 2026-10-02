@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "frozen": true,
+  "frozen_on": "2026-10-02",
+  "reference_clip": "dataset/congelar/abrir porta/amostra.wav",
+  "audio": {
+    "sample_rate_hz": 16000,
+    "channels": 1,
+    "sample_format": "pcm_s16le",
+    "window_s": 1.0,
+    "window_samples": 16000
+  },
+  "mfcc": {
+    "preemphasis": 0.97,
+    "frame_length_ms": 20,
+    "frame_step_ms": 10,
+    "frame_length_samples": 320,
+    "frame_step_samples": 160,
+    "n_frames": 99,
+    "n_fft": 512,
+    "window_fn": "hann",
+    "n_mels": 40,
+    "n_mfcc": 13,
+    "fmin_hz": 0,
+    "fmax_hz": 8000,
+    "mel_scale": "htk",
+    "log_floor": 1e-10,
+    "dct_type": 2,
+    "lifter": 22,
+    "include_energy": false
+  },
+  "tensor": {
+    "shape": [99, 13],
+    "layout": "frames_x_mfcc"
+  },
+  "labels": ["silencio", "desconhecido", "abrir", "fechar"],
+  "utterances": {
+    "abrir": "abrir porta",
+    "fechar": "fechar porta"
+  }
+}

@@ -84,6 +84,10 @@ Desktop.ini
 .githooks/*.log
 
 .pytest_cache/
+.venv/
+__pycache__/
+*.pyc
+dataset/.cache/
 
 # Documentos locais: pesquisa solta, licoes aprendidas, material de
 # apresentacao/aula -- pessoal, nunca parte do entregavel do projeto.
