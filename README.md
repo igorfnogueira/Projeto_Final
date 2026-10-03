@@ -37,6 +37,8 @@ Silêncio e desconhecido não movem o servo. Abrir vai a 90° e fechar volta a 0
 
 O treino é `python -m treino.train`, com a seed 42. O notebook `treino/treino.ipynb` chama o mesmo comando. O primeiro conjunto é só `dataset/igor/` mais `dataset/desconhecido/`. Os clipes 01 a 08 treinam; 09 e 10 ficam de fora.
 
+Para ouvir uma frase no microfone do computador, sem o ESP32: `python -m treino.ouvir`. Cada tomada grava 1 s, toca essa gravação de volta e imprime a classe e a linha do servo. O WAV fica em `dataset/.cache/ouvir/`. O servo do Wokwi não se move nesse caminho. Ctrl+C encerra.
+
 Dependências Python: `requirements.txt`, com o ambiente travado em `requirements.lock`.
 
 ## O que só o grupo grava

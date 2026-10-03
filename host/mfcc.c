@@ -3,6 +3,11 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef ESP_PLATFORM
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#endif
+
 #define TAXA 16000
 #define PRE 0.97
 #define QUADRO 320
@@ -13,10 +18,11 @@
 #define PISO 1e-10
 #define LIFTER 22.0
 
-static double banco[MELS][BINS];
-static double base[MFCC_COEF][MELS];
-static double lifter[MFCC_COEF];
-static double hann[QUADRO];
+/* float: o ESP32-S3 tem FPU simples. double cai em software e estoura o watchdog. */
+static float banco[MELS][BINS];
+static float base[MFCC_COEF][MELS];
+static float lifter[MFCC_COEF];
+static float hann[QUADRO];
 static int pronto;
 
 static double hz_para_mel(double hz)
@@ -29,7 +35,7 @@ static double mel_para_hz(double mel)
     return 700.0 * (pow(10.0, mel / 2595.0) - 1.0);
 }
 
-static void fft(double *re, double *im, int n)
+static void fft(float *re, float *im, int n)
 {
     int i, j, k, bloco, metade;
 
@@ -40,8 +46,8 @@ static void fft(double *re, double *im, int n)
         }
         j ^= bit;
         if (i < j) {
-            double tr = re[i];
-            double ti = im[i];
+            float tr = re[i];
+            float ti = im[i];
             re[i] = re[j];
             im[i] = im[j];
             re[j] = tr;
@@ -50,20 +56,20 @@ static void fft(double *re, double *im, int n)
     }
 
     for (bloco = 2; bloco <= n; bloco <<= 1) {
-        double ang = -2.0 * 3.14159265358979323846 / bloco;
-        double wlen_re = cos(ang);
-        double wlen_im = sin(ang);
+        float ang = -2.0f * 3.14159265358979323846f / (float)bloco;
+        float wlen_re = cosf(ang);
+        float wlen_im = sinf(ang);
         metade = bloco >> 1;
         for (i = 0; i < n; i += bloco) {
-            double w_re = 1.0;
-            double w_im = 0.0;
+            float w_re = 1.0f;
+            float w_im = 0.0f;
             for (k = 0; k < metade; k++) {
                 int a = i + k;
                 int b = a + metade;
-                double vr = re[b] * w_re - im[b] * w_im;
-                double vi = re[b] * w_im + im[b] * w_re;
-                double nr = w_re * wlen_re - w_im * wlen_im;
-                double ni = w_re * wlen_im + w_im * wlen_re;
+                float vr = re[b] * w_re - im[b] * w_im;
+                float vi = re[b] * w_im + im[b] * w_re;
+                float nr = w_re * wlen_re - w_im * wlen_im;
+                float ni = w_re * wlen_im + w_im * wlen_re;
                 re[b] = re[a] - vr;
                 im[b] = im[a] - vi;
                 re[a] += vr;
@@ -88,7 +94,7 @@ static void preparar(void)
     }
 
     for (i = 0; i < QUADRO; i++) {
-        hann[i] = 0.5 - 0.5 * cos(2.0 * 3.14159265358979323846 * i / (QUADRO - 1));
+        hann[i] = (float)(0.5 - 0.5 * cos(2.0 * 3.14159265358979323846 * i / (QUADRO - 1)));
     }
 
     for (i = 0; i < MELS + 2; i++) {
@@ -112,12 +118,12 @@ static void preparar(void)
         int dir = bins[i + 2];
         if (centro > esq) {
             for (j = esq; j < centro; j++) {
-                banco[i][j] = (double)(j - esq) / (double)(centro - esq);
+                banco[i][j] = (float)(j - esq) / (float)(centro - esq);
             }
         }
         if (dir > centro) {
             for (j = centro; j < dir; j++) {
-                banco[i][j] = (double)(dir - j) / (double)(dir - centro);
+                banco[i][j] = (float)(dir - j) / (float)(dir - centro);
             }
         }
     }
@@ -128,9 +134,9 @@ static void preparar(void)
             escala = sqrt(1.0 / MELS);
         }
         for (j = 0; j < MELS; j++) {
-            base[k][j] = escala * cos(3.14159265358979323846 * k * (j + 0.5) / MELS);
+            base[k][j] = (float)(escala * cos(3.14159265358979323846 * k * (j + 0.5) / MELS));
         }
-        lifter[k] = 1.0 + (LIFTER / 2.0) * sin(3.14159265358979323846 * k / LIFTER);
+        lifter[k] = (float)(1.0 + (LIFTER / 2.0) * sin(3.14159265358979323846 * k / LIFTER));
     }
 
     (void)mels;
@@ -139,47 +145,50 @@ static void preparar(void)
 
 void mfcc_janela(const int16_t *pcm, double *saida)
 {
-    /* Fora da pilha: no ESP32-S3 a tarefa principal não cabe 8 KB de FFT. */
-    static double re[FFT_N];
-    static double im[FFT_N];
+    /* Fora da pilha: no ESP32-S3 a tarefa principal não cabe a FFT. */
+    static float re[FFT_N];
+    static float im[FFT_N];
     int i, j, k;
 
     preparar();
 
     for (i = 0; i < MFCC_QUADROS; i++) {
-        double logmel[MELS];
+        float logmel[MELS];
         int inicio = i * PASSO;
 
         memset(re, 0, sizeof(re));
         memset(im, 0, sizeof(im));
         for (j = 0; j < QUADRO; j++) {
             int n = inicio + j;
-            double amostra = (double)pcm[n];
+            float amostra = (float)pcm[n];
             if (n > 0) {
-                amostra -= PRE * (double)pcm[n - 1];
+                amostra -= (float)PRE * (float)pcm[n - 1];
             }
             re[j] = amostra * hann[j];
         }
         fft(re, im, FFT_N);
 
         for (j = 0; j < MELS; j++) {
-            double energia = 0.0;
+            float energia = 0.0f;
             for (k = 0; k < BINS; k++) {
-                double pot = re[k] * re[k] + im[k] * im[k];
+                float pot = re[k] * re[k] + im[k] * im[k];
                 energia += banco[j][k] * pot;
             }
-            if (energia < PISO) {
-                energia = PISO;
+            if (energia < (float)PISO) {
+                energia = (float)PISO;
             }
-            logmel[j] = log(energia);
+            logmel[j] = logf(energia);
         }
 
         for (k = 0; k < MFCC_COEF; k++) {
-            double c = 0.0;
+            float c = 0.0f;
             for (j = 0; j < MELS; j++) {
                 c += logmel[j] * base[k][j];
             }
-            saida[i * MFCC_COEF + k] = c * lifter[k];
+            saida[i * MFCC_COEF + k] = (double)(c * lifter[k]);
         }
+#ifdef ESP_PLATFORM
+        vTaskDelay(1);
+#endif
     }
 }
