@@ -254,3 +254,27 @@ documentação do `date` BSD — se algum colaborador usar macOS, vale
 confirmar na prática.
 
 Assinatura de busca: `grep -n "date -j -f" .githooks/pre-commit`.
+
+## Watchdog no Wokwi, antes de qualquer classe
+
+Identificado em: 2026-10-02, firmware `81b359a`.
+
+**Sintoma:** o firmware sobe, o `app_main` começa, e a cada 5 s o log mostra `task_wdt` em `IDLE0`, com a CPU 0 presa em `main`. Nenhuma linha `classe` aparece.
+
+**Causa raiz:** o MFCC em `double` roda em software no ESP32-S3. O chip só tem unidade de ponto flutuante simples. A tarefa principal não devolve a CPU durante os 99 quadros, e o idle da CPU 0 não chega a rodar dentro do prazo do watchdog.
+
+**Correção (2026-10-02):** o miolo da FFT em `host/mfcc.c` passou a `float`, e cada quadro chama `vTaskDelay(1)` no firmware. O serial confirmado ficou `classe silencio`, `classe desconhecido`, `classe abrir`, `servo 90`, `classe fechar`, `servo 0`.
+
+Assinatura de busca: `grep -n "vTaskDelay" host/mfcc.c`.
+
+## "fechar porta" cai em abrir com a frase dentro do segundo
+
+Identificado em: 2026-10-02, 15 janelas de 1 s cortadas de um compilado em que a frase se ouve inteira.
+
+**Sintoma:** 9 janelas saíram `abrir` e 6 saíram `fechar`. Nenhuma caiu em `silencio`.
+
+**Causa raiz:** o centróide compara a média dos 99 quadros e a classe é o `argmax`, sem margem. O começo da frase fica mais perto de `fechar`; o final, mais perto de `abrir`. A média puxa para `abrir`. Em empate do INT8, o `argmax` devolve o primeiro índice, que é `abrir`.
+
+**Correção:** ainda não aplicada. A ordem medida é imprimir a margem no PC sem mudar o servo, refazer o mesmo centróide com mais clipes do grupo nas duas frases, e só então abrir a janela ao vivo na fala, em vez de no aviso.
+
+Assinatura de busca: `grep -n "np.argmax" treino/train.py`.
